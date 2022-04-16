@@ -1,0 +1,27 @@
+{
+  "name": "muhammad-fikri-fadlurrahman-betest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mfikrifadl/Muhammad-Fikri-Fadlurrahman-betest.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mfikrifadl/Muhammad-Fikri-Fadlurrahman-betest/issues"
+  },
+  "homepage": "https://github.com/mfikrifadl/Muhammad-Fikri-Fadlurrahman-betest#readme",
+  "dependencies": {
+    "express": "^4.17.3",
+    "mongodb": "^4.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}

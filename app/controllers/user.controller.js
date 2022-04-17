@@ -2,6 +2,7 @@ const db = require("../models");
 const User = db.users;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const Redis = require("../config/redis");
 
 exports.create = async (req, res) => {
   if (!req.body.userName) {
@@ -157,7 +158,7 @@ exports.loginRequired = function (req, res, next) {
   }
 };
 
-exports.getAll = (req, res) => {
+exports.getAll = async (req, res) => {
   const accountNumber = req.query.accountNumber;
   const identityNumber = req.query.identityNumber;
 
@@ -169,45 +170,66 @@ exports.getAll = (req, res) => {
     condition["identityNumber"] = identityNumber;
   }
 
-  User.find(condition)
-    .then((data) => {
-      res.status(200).send({
-        code: 200,
-        message: "Success get all users",
-        data: data,
-      });
-    })
-    .catch((err) => {
-      res.status(500).send({
-        code: 500,
-        message: err.message || "Some error occurred while retrieving users.",
-      });
+  const { reply } = await Redis.get(JSON.stringify(condition));
+  if (reply) {
+    res.status(200).send({
+      code: 200,
+      message: "Success get all users from redis",
+      data: reply,
     });
-};
+  } else {
+    User.find(condition)
+      .then((data) => {
+        Redis.set(JSON.stringify(condition), JSON.stringify(data));
 
-exports.findById = (req, res) => {
-  const id = req.params.id;
-  User.findById(id)
-    .then((data) => {
-      if (!data)
-        res.status(404).send({
-          code: 404,
-          message: "Not found User with id " + id,
-        });
-      else {
         res.status(200).send({
           code: 200,
-          message: "Success get user with id " + id,
+          message: "Success get all users from db",
           data: data,
         });
-      }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        code: 500,
-        message: "Error retrieving User with id " + id,
+      })
+      .catch((err) => {
+        res.status(500).send({
+          code: 500,
+          message: err.message || "Some error occurred while retrieving users.",
+        });
       });
+  }
+};
+
+exports.findById = async (req, res) => {
+  const id = req.params.id;
+  const { reply } = await Redis.get(id);
+  if (reply) {
+    res.status(200).send({
+      code: 200,
+      message: "Success get user with id " + id + " from redis",
+      data: reply,
     });
+  } else {
+    User.findById(id)
+      .then((data) => {
+        if (!data)
+          res.status(404).send({
+            code: 404,
+            message: "Not found User with id " + id,
+          });
+        else {
+          Redis.set(id, JSON.stringify(data));
+          res.status(200).send({
+            code: 200,
+            message: "Success get user with id " + id + " from db",
+            data: data,
+          });
+        }
+      })
+      .catch((err) => {
+        res.status(500).send({
+          code: 500,
+          message: "Error retrieving User with id " + id,
+        });
+      });
+  }
 };
 
 exports.update = (req, res) => {

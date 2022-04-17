@@ -21,9 +21,11 @@
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
     "express": "^4.17.3",
+    "ioredis": "^5.0.4",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.5.0",
-    "mongoose": "^6.3.0"
+    "mongoose": "^6.3.0",
+    "redis": "^4.0.6"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

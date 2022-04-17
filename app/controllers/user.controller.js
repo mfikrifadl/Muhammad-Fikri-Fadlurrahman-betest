@@ -3,7 +3,7 @@ const User = db.users;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   if (!req.body.userName) {
     res.status(400).send({ message: "userName can not be empty!" });
     return;
@@ -34,6 +34,27 @@ exports.create = (req, res) => {
     userType = req.body.userType;
   }
 
+  const checkEmail = await findByEmail(req.body.emailAddress);
+  if (checkEmail) {
+    res.status(500).send({ message: "Email has been used" });
+    return;
+  }
+
+  const checkAccountNumber = await findByAccountNumber(req.body.accountNumber);
+  if (checkAccountNumber) {
+    res.status(500).send({ message: "Account number has been used" });
+    return;
+  }
+
+  const checkIdentityNumber = await findByIdentityNumber(
+    req.body.identityNumber
+  );
+
+  if (checkIdentityNumber) {
+    res.status(500).send({ message: "Identify number has been used" });
+    return;
+  }
+
   const user = new User({
     userName: req.body.userName,
     accountNumber: req.body.accountNumber,
@@ -43,76 +64,89 @@ exports.create = (req, res) => {
     userType: userType,
   });
 
-  User.findOne(
-    {
-      emailAddress: req.body.emailAddress,
-    },
-    function (error, data) {
-      if (error) throw error;
-      if (data == null) {
-        user
-          .save(user)
-          .then((data) => {
-            res.status(200).send({
-              code: 200,
-              message: "Success create user",
-              data: data,
-            });
-          })
-          .catch((err) => {
-            res.status(500).send({
-              message:
-                err.message ||
-                "Some error occurred while creating the Tutorial.",
-            });
-          });
-      } else {
-        res.status(500).send({
-          message: "Email has been used",
-        });
-      }
-    }
-  );
+  user
+    .save(user)
+    .then((data) => {
+      res.status(200).send({
+        code: 200,
+        message: "Success create user",
+        data: data,
+      });
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while creating the Tutorial.",
+      });
+    });
 };
 
-exports.signIn = (req, res) => {
-  User.findOne(
-    {
-      emailAddress: req.body.email,
-    },
-    function (err, user) {
-      if (err) throw err;
-      if (!user) {
-        return res.status(401).json({
-          code: 401,
-          message: "Authentication failed. Invalid user not found.",
-        });
+const findByEmail = (email) => {
+  return new Promise((resolve) => {
+    User.findOne(
+      {
+        emailAddress: email,
+      },
+      function (error, data) {
+        resolve(data);
       }
+    );
+  });
+};
 
-      bcrypt.compare(
-        req.body.password,
-        user.hashPassword,
-        function (err, result) {
-          if (err) throw err;
-          if (!result) {
-            return res.status(401).json({
-              code: 401,
-              message: "Authentication failed. Password Wrong",
-            });
-          }
+const findByAccountNumber = (accountNumber) => {
+  return new Promise((resolve) => {
+    User.findOne(
+      {
+        accountNumber: accountNumber,
+      },
+      function (error, data) {
+        resolve(data);
+      }
+    );
+  });
+};
 
-          return res.json({
-            code: 200,
-            message: "Success Login User",
-            token: jwt.sign(
-              { email: user.email, fullName: user.fullName, _id: user._id },
-              "RESTFULAPIs"
-            ),
-          });
-        }
-      );
+const findByIdentityNumber = (identityNumber) => {
+  return new Promise((resolve) => {
+    User.findOne(
+      {
+        identityNumber: identityNumber,
+      },
+      function (error, data) {
+        resolve(data);
+      }
+    );
+  });
+};
+
+exports.signIn = async (req, res) => {
+  const user = await findByEmail(req.body.email);
+  if (!user) {
+    return res.status(401).json({
+      code: 401,
+      message: "Authentication failed. Invalid user not found.",
+    });
+  }
+
+  bcrypt.compare(req.body.password, user.hashPassword, function (err, result) {
+    if (err) throw err;
+    if (!result) {
+      return res.status(401).json({
+        code: 401,
+        message: "Authentication failed. Password Wrong",
+      });
     }
-  );
+
+    return res.json({
+      code: 200,
+      message: "Success Login User",
+      token: jwt.sign(
+        { email: user.email, fullName: user.fullName, _id: user._id },
+        "RESTFULAPIs"
+      ),
+    });
+  });
 };
 
 exports.loginRequired = function (req, res, next) {
@@ -124,7 +158,18 @@ exports.loginRequired = function (req, res, next) {
 };
 
 exports.getAll = (req, res) => {
-  User.find({})
+  const accountNumber = req.query.accountNumber;
+  const identityNumber = req.query.identityNumber;
+
+  let condition = {};
+  if (accountNumber) {
+    condition["accountNumber"] = accountNumber;
+  }
+  if (identityNumber) {
+    condition["identityNumber"] = identityNumber;
+  }
+
+  User.find(condition)
     .then((data) => {
       res.status(200).send({
         code: 200,

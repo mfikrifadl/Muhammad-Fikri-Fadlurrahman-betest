@@ -14,7 +14,11 @@ module.exports = (mongoose) => {
         required: true,
         default: "consumer",
       },
-      accountNumber: Number,
+      accountNumber: {
+        type: Number,
+        unique: true,
+        required: true,
+      },
       emailAddress: {
         type: String,
         unique: true,
@@ -22,7 +26,11 @@ module.exports = (mongoose) => {
         trim: true,
         required: true,
       },
-      identityNumber: Number,
+      identityNumber: {
+        type: Number,
+        unique: true,
+        required: true,
+      },
       hashPassword: {
         type: String,
       },

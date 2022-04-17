@@ -232,7 +232,7 @@ exports.findById = async (req, res) => {
   }
 };
 
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
   if (!req.body) {
     return res.status(400).send({
       code: 400,
@@ -241,8 +241,38 @@ exports.update = (req, res) => {
   }
 
   const data = req.body;
-
   const id = req.params.id;
+
+  if (data.emailAddress) {
+    const checkEmail = await findByEmail(data.emailAddress);
+    if (checkEmail && JSON.stringify(checkEmail._id) != JSON.stringify(id)) {
+      res.status(500).send({ message: "Email has been used" });
+      return;
+    }
+  }
+
+  if (data.accountNumber) {
+    const checkAccountNumber = await findByAccountNumber(data.accountNumber);
+    if (
+      checkAccountNumber &&
+      JSON.stringify(checkAccountNumber._id) != JSON.stringify(id)
+    ) {
+      res.status(500).send({ message: "Account number has been used" });
+      return;
+    }
+  }
+
+  if (data.identityNumber) {
+    const checkIdentityNumber = await findByIdentityNumber(data.identityNumber);
+
+    if (
+      checkIdentityNumber &&
+      JSON.stringify(checkIdentityNumber._id) != JSON.stringify(id)
+    ) {
+      res.status(500).send({ message: "Identify number has been used" });
+      return;
+    }
+  }
 
   User.findByIdAndUpdate(id, data, { useFindAndModify: false })
     .then((data) => {
